@@ -1,1 +1,0 @@
-<div style="width: 300px; height: 300px; border-radius: 50%; background-color: red;"></div>
