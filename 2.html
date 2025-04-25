@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Time Slot Checker</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ddd; }
+        .valid { background-color: #e6ffe6; }
+        .invalid { background-color: #ffe6e6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Time Slot Checker</h1>
+        
+        <div>
+            <h3>Test righttime() function:</h3>
+            <p>Example usage in console: righttime(new Date(), "TR10:00-11:15, F14:00-15:45")</p >
+        </div>
+
+        <div id="testArea">
+            <h3>Interactive Test:</h3>
+            <label for="datetime">Date/Time:</label>
+            <input type="datetime-local" id="datetime">
+            
+            <label for="timeslots" style="margin-left: 20px;">Time Slots:</label>
+            <input type="text" id="timeslots" size="40" placeholder="e.g., TR10:00-11:15, F14:00-15:45">
+            
+            <button onclick="testFunction()">Check</button>
+            
+            <div id="result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        function righttime(d, timeslots) {
+            if (!(d instanceof Date) || isNaN(d.getTime())) {
+                throw new Error("Invalid date object");
+            }
+
+            const normalized = timeslots
+                .toUpperCase()
+                .replace(/\s+/g, '')
+                .replace(/,+/g, ',')
+                .replace(/,$/, '');
+
+            if (!normalized) return false;
+
+            const slots = normalized.split(',');
+            const day = d.getDay();
+            const currentHours = d.getHours();
+            const currentMinutes = d.getMinutes();
+            const currentTime = currentHours * 60 + currentMinutes;
+
+            const dayMap = {
+                'U': 0, 'S': 0,
+                'M': 1,
+                'T': 2,
+                'W': 3,
+                'R': 4,
+                'F': 5,
+                'SA': 6, 'S': 6
+            };
+
+            for (const slot of slots) {
+                const match = slot.match(/^([A-Z]+)(\d{1,2}:\d{1,2})-(\d{1,2}:\d{1,2})$/);
+                if (!match) continue;
+
+                const daysStr = match[1];
+                const startTimeStr = match[2];
+                const endTimeStr = match[3];
+
+                let dayMatch = false;
+                for (const dayChar of daysStr.split('')) {
+                    if (dayMap[dayChar] === day) {
+                        dayMatch = true;
+                        break;
+                    }
+                }
+                if (!dayMatch) continue;
+
+                const [startHour, startMinute] = startTimeStr.split(':').map(Number);
+                const [endHour, endMinute] = endTimeStr.split(':').map(Number);
+
+                if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 23 ||
+                    startMinute < 0 || startMinute > 59 || endMinute < 0 || endMinute > 59) {
+                    continue;
+                }
+
+                const startTime = startHour * 60 + startMinute;
+                const endTime = endHour * 60 + endMinute;
+
+                if (currentTime >= startTime && currentTime <= endTime) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function testFunction() {
+            const datetimeInput = document.getElementById('datetime').value;
+            const timeslotsInput = document.getElementById('timeslots').value;
+            const resultDiv = document.getElementById('result');
+
+            if (!datetimeInput || !timeslotsInput) {
+                resultDiv.textContent = "Please enter both date/time and time slots";
+                resultDiv.className = "result invalid";
+                return;
+            }
+
+            try {
+                const dateObj = new Date(datetimeInput);
+                const isValid = righttime(dateObj, timeslotsInput);
+                
+                resultDiv.textContent = `The date/time ${dateObj.toString()} is ${isValid ? 'WITHIN' : 'NOT within'} the specified time slots.`;
+                resultDiv.className = `result ${isValid ? 'valid' : 'invalid'}`;
+            } catch (e) {
+                resultDiv.textContent = `Error: ${e.message}`;
+                resultDiv.className = "result invalid";
+            }
+        }
+
+        console.log("Example 1:", 
+            righttime(new Date("2023-05-04T10:30:00"), "TR10:00-11:15, F14:00-15:45"));
+        console.log("Example 2:", 
+            righttime(new Date("2023-05-05T14:30:00"), " T R 10:0-11:15,  F 14:00 - 15:45 "));
+    </script>
+</body>
+</html>
